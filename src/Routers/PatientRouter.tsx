@@ -85,7 +85,7 @@ const AppointmentRoutes = {
 
 // This inner component runs INSIDE PluginEngine, so usePluginRoutes() works
 function PatientRouterContent() {
-  const pluginRoutes = usePluginRoutes();
+  const pluginRoutes = usePluginRoutes(); // ✅ safe here
 
   const pages = useRoutes({
     ...pluginRoutes,
