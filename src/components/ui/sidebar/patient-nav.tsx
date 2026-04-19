@@ -8,8 +8,8 @@ import { PatientSwitcher } from "@/components/ui/sidebar/patient-switcher";
 
 import { usePatientContext } from "@/hooks/usePatientUser";
 
-import { PublicPatientRead } from "@/types/emr/patient/patient";
 import { PLUGIN_Component } from "@/PluginEngine";
+import { PublicPatientRead } from "@/types/emr/patient/patient";
 
 function generatePatientLinks(
   selectedUser: PublicPatientRead | null,
