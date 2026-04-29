@@ -8,6 +8,7 @@ import { PatientSwitcher } from "@/components/ui/sidebar/patient-switcher";
 
 import { usePatientContext } from "@/hooks/usePatientUser";
 
+import { PLUGIN_Component } from "@/PluginEngine";
 import { PublicPatientRead } from "@/types/emr/patient/patient";
 
 function generatePatientLinks(
@@ -54,6 +55,12 @@ export function PatientNav() {
     <>
       <PatientSwitcher />
       <NavMain links={generatePatientLinks(selectedPatient, t)} />
+      {selectedPatient && (
+        <PLUGIN_Component
+          __name="PatientSidebarActions"
+          patient={selectedPatient}
+        />
+      )}
     </>
   );
 }
