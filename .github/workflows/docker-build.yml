@@ -6,6 +6,7 @@ on:
       - develop
       - main
       - production
+      - new-deployment
     tags:
       - 'v*'
   workflow_dispatch:
@@ -83,8 +84,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
-            REACT_CARE_API_URL=https://care-k3s.digit.org
-            REACT_PUBLIC_URL=https://care-k3s.digit.org
+            REACT_CARE_API_URL=http://13.127.28.175:30800
+            REACT_PUBLIC_URL=http://13.127.28.175:30800
 
       - name: Output image details
         run: |
