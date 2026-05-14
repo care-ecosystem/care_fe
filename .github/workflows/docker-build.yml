@@ -84,8 +84,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
-            REACT_CARE_API_URL=http://13.233.89.42:30800
-            REACT_PUBLIC_URL=http://13.233.89.42:30800
+            REACT_CARE_API_URL=http://13.206.241.19:30800
+            REACT_PUBLIC_URL=http://13.206.241.19:30800
 
       - name: Output image details
         run: |
