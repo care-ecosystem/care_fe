@@ -106,6 +106,7 @@ export type SupportedPluginComponents = {
   PatientInfoCardActions: PatientInfoCardActionsComponentType;
   ServiceRequestAction: ServiceRequestComponentType;
   PatientSidebarActions: PatientSidebarActionsComponentType;
+  CareIssueManagementWidget: React.FC;
 };
 
 // Create a type for lazy-loaded components

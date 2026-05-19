@@ -42,14 +42,14 @@ const App = () => {
           <PubSubProvider>
             <ShortcutProvider>
               <HistoryAPIProvider>
-                <AuthUserProvider
-                  unauthorized={<Routers.PublicRouter />}
-                  otpAuthorized={<Routers.PatientRouter />}
-                >
-                  <PluginEngine>
+                <PluginEngine>
+                  <AuthUserProvider
+                    unauthorized={<Routers.PublicRouter />}
+                    otpAuthorized={<Routers.PatientRouter />}
+                  >
                     <Routers.AppRouter />
-                  </PluginEngine>
-                </AuthUserProvider>
+                  </AuthUserProvider>
+                </PluginEngine>
               </HistoryAPIProvider>
               <Toaster
                 position="top-center"
