@@ -18,6 +18,8 @@ export const LANGUAGES = {
   hi: "हिन्दी",
 } as const;
 
+const CARE_ECOSYSTEM="care-ecosystem.github.io";
+
 const DEFAULT_NAMESPACE = "care_fe";
 
 let pluginConfigs: PlugConfig[] = [];
@@ -36,7 +38,11 @@ const namespaceToUrl = (namespace: string) => {
     z.string().url().safeParse(pluginConfig.meta.url).success
   ) {
     const url = new URL(pluginConfig.meta.url);
-    return url.origin.toString();
+    const orginUrl=url.origin.toString();
+    if(orginUrl?.includes(CARE_ECOSYSTEM)){
+      return `${orginUrl}/${namespace}`
+    }
+    return orginUrl;
   }
 
   return undefined;
