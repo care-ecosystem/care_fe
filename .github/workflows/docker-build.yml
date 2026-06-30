@@ -139,8 +139,8 @@ jobs:
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache,mode=max
           build-args: |
-            REACT_CARE_API_URL=http://unified-dev.digit.org
-            REACT_PUBLIC_URL=http://unified-dev.digit.org
+            REACT_CARE_API_URL=https://care-dev.digit.org
+            REACT_PUBLIC_URL=https://care-dev.digit.org
 
   # ── Job 3: Combine arch digests → multi-arch manifest for every final tag ────
   create-manifest:
