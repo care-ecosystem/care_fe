@@ -8,8 +8,8 @@ export enum QuestionType {
   integer = "integer",
   dateTime = "dateTime",
   time = "time",
-  string = "string",
-  text = "text",
+  string = "string",   // Single-line
+  text = "text",       // Multi-line / paragraph
   quantity = "quantity",
 }
 
