@@ -1,5 +1,5 @@
 import careConfig from "@careConfig";
-import { usePath, useRedirect, useRoutes } from "raviger";
+import { Redirect, usePath, useRedirect, useRoutes } from "raviger";
 
 import IconIndex from "@/CAREUI/icons/Index";
 
@@ -16,6 +16,7 @@ import { useOrganizationRoutes, usePluginRoutes } from "@/hooks/useCareApps";
 import useSidebarState from "@/hooks/useSidebarState";
 
 import { PLUGIN_Component } from "@/PluginEngine";
+import { routes as publicRoutes } from "@/Routers/PublicRouter";
 import ConsultationRoutes from "@/Routers/routes/ConsultationRoutes";
 import FacilityRoutes from "@/Routers/routes/FacilityRoutes";
 import OrganizationRoutes from "@/Routers/routes/OrganizationRoutes";
@@ -29,6 +30,7 @@ import { ShortcutCommandDialog } from "@/components/Facility/ShortcutCommandDial
 import { Button } from "@/components/ui/button";
 import { PermissionProvider } from "@/context/PermissionContext";
 import { useShortcuts } from "@/context/ShortcutContext";
+import { LicensesPage } from "@/pages/Licenses/Licenses";
 import UserDashboard from "@/pages/UserDashboard";
 
 // List of paths and patterns where the sidebar should be hidden
@@ -81,6 +83,7 @@ const Routes: AppRoutes = {
   "/session-expired": () => <SessionExpired />,
   "/not-found": () => <ErrorPage />,
   "/icons": () => <IconIndex />,
+  "/licenses": () => <LicensesPage />,
 
   // Only include the icon route in development environment
   ...(import.meta.env.PROD ? { "/icons": () => <IconIndex /> } : {}),
@@ -89,6 +92,10 @@ const Routes: AppRoutes = {
 const AdminRouter: AppRoutes = {
   ...AdminRoutes,
 };
+
+const publicRedirects = Object.fromEntries(
+  Object.keys(publicRoutes).map((path) => [path, () => <Redirect to="/" />]),
+);
 
 export default function AppRouter() {
   const pluginRoutes = usePluginRoutes();
@@ -106,13 +113,14 @@ export default function AppRouter() {
 
   const appPages = useRoutes(routes);
   const adminPages = useRoutes(AdminRouter);
+  const publicRedirectsPages = useRoutes(publicRedirects);
 
   const currentPath = usePath();
   const isAdminPage = currentPath?.startsWith("/admin");
 
   const sidebarFor = isAdminPage ? SidebarFor.ADMIN : SidebarFor.FACILITY;
 
-  const pages = appPages || adminPages || <ErrorPage />;
+  const pages = appPages || adminPages || publicRedirectsPages || <ErrorPage />;
 
   const user = useAuthUser();
 
