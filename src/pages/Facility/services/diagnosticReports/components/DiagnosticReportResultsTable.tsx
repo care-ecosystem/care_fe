@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/table";
 
 import { Separator } from "@/components/ui/separator";
+import { useCareApps } from "@/hooks/useCareApps";
+import { PLUGIN_Component } from "@/PluginEngine";
 import { ConditionOperationSummary } from "@/types/base/condition/condition";
 import {
   Interpretation,
@@ -31,10 +33,28 @@ interface DiagnosticReportResultsTableProps {
 export function DiagnosticReportResultsTable({
   observations,
 }: DiagnosticReportResultsTableProps) {
-  const hasInterpretation = observations.some(
+  const careApps = useCareApps();
+  const hasRadiologyResultsView = careApps.some(
+    (app) =>
+      !app.isLoading && app.components?.RadiologyDiagnosticReportResultsView,
+  );
+
+  const radiologyResultsViewObservations: ObservationRead[] = [];
+  const tableObservations: ObservationRead[] = [];
+  for (const observation of observations) {
+    const observationCategory = observation.observation_definition?.category;
+
+    if (hasRadiologyResultsView && observationCategory === "imaging") {
+      radiologyResultsViewObservations.push(observation);
+    } else {
+      tableObservations.push(observation);
+    }
+  }
+
+  const hasInterpretation = tableObservations.some(
     (observation) => observation.interpretation?.display,
   );
-  const hasComponentInterpretation = observations.some(
+  const hasComponentInterpretation = tableObservations.some(
     (observation) =>
       observation.component &&
       observation.component.some(
@@ -256,30 +276,42 @@ export function DiagnosticReportResultsTable({
   }
 
   return (
-    <div className="rounded-md border overflow-hidden">
-      <Table className="border-collapse bg-white shadow-sm cursor-default table-fixed w-full">
-        <TableHeader className="bg-gray-100">
-          <TableRow className="divide-x-1 divide-gray-300">
-            <TableHead className="font-medium text-sm text-gray-700 w-[25%] align-top pt-2">
-              {t("test")}
-            </TableHead>
-            <TableHead className="font-medium text-sm text-gray-700 w-[25%] align-top pt-2">
-              {t("result")}
-            </TableHead>
-            <TableHead className="font-medium text-sm text-gray-700 w-[25%] whitespace-normal wrap-break-word align-top pt-2">
-              {t("reference_range")}
-            </TableHead>
-            {showInterpretation && (
-              <TableHead className="font-medium text-sm text-gray-700 w-[25%] whitespace-normal wrap-break-word align-top pt-2">
-                {t("interpretation")}
-              </TableHead>
-            )}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {observations.map((observation) => renderObservation(observation))}
-        </TableBody>
-      </Table>
+    <div className="space-y-4">
+      {radiologyResultsViewObservations.length > 0 && (
+        <PLUGIN_Component
+          __name="RadiologyDiagnosticReportResultsView"
+          observations={radiologyResultsViewObservations}
+        />
+      )}
+      {tableObservations.length > 0 && (
+        <div className="rounded-md border overflow-hidden">
+          <Table className="border-collapse bg-white shadow-sm cursor-default table-fixed w-full">
+            <TableHeader className="bg-gray-100">
+              <TableRow className="divide-x-1 divide-gray-300">
+                <TableHead className="font-medium text-sm text-gray-700 w-[25%] align-top pt-2">
+                  {t("test")}
+                </TableHead>
+                <TableHead className="font-medium text-sm text-gray-700 w-[25%] align-top pt-2">
+                  {t("result")}
+                </TableHead>
+                <TableHead className="font-medium text-sm text-gray-700 w-[25%] whitespace-normal wrap-break-word align-top pt-2">
+                  {t("reference_range")}
+                </TableHead>
+                {showInterpretation && (
+                  <TableHead className="font-medium text-sm text-gray-700 w-[25%] whitespace-normal wrap-break-word align-top pt-2">
+                    {t("interpretation")}
+                  </TableHead>
+                )}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {tableObservations.map((observation) =>
+                renderObservation(observation),
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 }
