@@ -49,6 +49,7 @@ import otpApi from "@/types/otp/otpApi";
 import { clearQueryPersistenceCache } from "@/Utils/request/queryClient";
 import { invalidateAllPaymentReconcilationLocationCaches } from "@/atoms/paymentReconcilationLocationAtom";
 import { clearQueuePractitionerCache } from "@/atoms/queuePractitionerAtom";
+import { register } from "@/lib/override";
 import { AuthHero } from "./AuthHero";
 
 interface OtpLoginData {
@@ -239,7 +240,7 @@ const Login = (props: LoginProps) => {
     return form;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault();
     ViewCache.invalidateAll();
     const validated = validateData();
@@ -279,7 +280,7 @@ const Login = (props: LoginProps) => {
     }
     return form;
   };
-  const handleForgetSubmit = async (e: React.FormEvent) => {
+  const handleForgetSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault();
     const valid = validateForgetData();
     if (!valid) return;
@@ -296,7 +297,7 @@ const Login = (props: LoginProps) => {
   };
 
   // Handle OTP flow
-  const handlePatientLogin = async (e: React.FormEvent) => {
+  const handlePatientLogin = async (e: React.SubmitEvent) => {
     e.preventDefault();
 
     if (!isOtpSent) {
@@ -806,4 +807,4 @@ const Login = (props: LoginProps) => {
   );
 };
 
-export default Login;
+export default register("Login", Login);
