@@ -224,8 +224,6 @@ export type PluginManifest = {
   devices?: readonly PluginDeviceManifest[];
   /** Component overrides provided by this plugin */
   overrides?: readonly PluginOverride[];
-  /** Observation category whose results this plugin renders via `DiagnosticReportResultsOverride` */
-  diagnosticReportResultsOverrideCategory?: string;
 };
 
 export type PluginManifestWithMeta = PluginManifest & {

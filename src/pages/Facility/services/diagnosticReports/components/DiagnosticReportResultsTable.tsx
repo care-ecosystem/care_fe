@@ -39,11 +39,11 @@ export function DiagnosticReportResultsTable({
   const overrideCategories = useMemo(
     () =>
       new Set(
-        careApps.flatMap((app) =>
-          !app.isLoading && app.diagnosticReportResultsOverrideCategory
-            ? [app.diagnosticReportResultsOverrideCategory]
-            : [],
-        ),
+        careApps.flatMap((app) => {
+          const category =
+            app.meta.config?.diagnosticReportResultsOverrideCategory;
+          return category ? [category] : [];
+        }),
       ),
     [careApps],
   );
