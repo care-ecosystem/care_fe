@@ -5,6 +5,7 @@ import { PluginEncounterTabProps } from "@/pages/Encounters/EncounterShow";
 import { InvoiceRead } from "@/types/billing/invoice/invoice";
 import { DeviceDetail } from "@/types/device/device";
 import { EncounterRead } from "@/types/emr/encounter/encounter";
+import { ObservationRead } from "@/types/emr/observation/observation";
 import {
   PatientListRead,
   PatientRead,
@@ -128,6 +129,10 @@ export type DeliveryOrderActionsComponentType = React.FC<{
   locationId: string;
 }>;
 
+export type DiagnosticReportResultsOverrideComponentType = React.FC<{
+  observations: ObservationRead[];
+}>;
+
 // Define supported plugin components
 export type SupportedPluginComponents = {
   DoctorConnectButtons: DoctorConnectButtonComponentType;
@@ -148,6 +153,7 @@ export type SupportedPluginComponents = {
   DiagnosticReportOverride: DiagnosticReportOverrideComponentType;
   PatientHomeQuickActions: PatientHomeActionsComponentType;
   DeliveryOrderActions: DeliveryOrderActionsComponentType;
+  DiagnosticReportResultsOverride: DiagnosticReportResultsOverrideComponentType;
 };
 
 // Create a type for lazy-loaded components
