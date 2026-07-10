@@ -129,7 +129,7 @@ export type DeliveryOrderActionsComponentType = React.FC<{
   locationId: string;
 }>;
 
-export type RadiologyDiagnosticReportResultsViewComponentType = React.FC<{
+export type DiagnosticReportResultsOverrideComponentType = React.FC<{
   observations: ObservationRead[];
 }>;
 
@@ -153,7 +153,7 @@ export type SupportedPluginComponents = {
   DiagnosticReportOverride: DiagnosticReportOverrideComponentType;
   PatientHomeQuickActions: PatientHomeActionsComponentType;
   DeliveryOrderActions: DeliveryOrderActionsComponentType;
-  RadiologyDiagnosticReportResultsView: RadiologyDiagnosticReportResultsViewComponentType;
+  DiagnosticReportResultsOverride: DiagnosticReportResultsOverrideComponentType;
 };
 
 // Create a type for lazy-loaded components
@@ -224,6 +224,8 @@ export type PluginManifest = {
   devices?: readonly PluginDeviceManifest[];
   /** Component overrides provided by this plugin */
   overrides?: readonly PluginOverride[];
+  /** Observation category whose results this plugin renders via `DiagnosticReportResultsOverride` */
+  diagnosticReportResultsOverrideCategory?: string;
 };
 
 export type PluginManifestWithMeta = PluginManifest & {

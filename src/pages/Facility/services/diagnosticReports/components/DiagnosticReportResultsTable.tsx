@@ -1,4 +1,5 @@
 import { t } from "i18next";
+import { Fragment, useMemo } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -34,27 +35,38 @@ export function DiagnosticReportResultsTable({
   observations,
 }: DiagnosticReportResultsTableProps) {
   const careApps = useCareApps();
-  const hasRadiologyResultsView = careApps.some(
-    (app) =>
-      !app.isLoading && app.components?.RadiologyDiagnosticReportResultsView,
+
+  const overrideCategories = useMemo(
+    () =>
+      new Set(
+        careApps.flatMap((app) =>
+          !app.isLoading && app.diagnosticReportResultsOverrideCategory
+            ? [app.diagnosticReportResultsOverrideCategory]
+            : [],
+        ),
+      ),
+    [careApps],
   );
 
-  const radiologyResultsViewObservations: ObservationRead[] = [];
-  const tableObservations: ObservationRead[] = [];
-  for (const observation of observations) {
-    const observationCategory = observation.observation_definition?.category;
+  const { overriddenObservations, nonOverriddenObservations } = useMemo(() => {
+    const overriddenObservations: ObservationRead[] = [];
+    const nonOverriddenObservations: ObservationRead[] = [];
+    for (const observation of observations) {
+      const observationCategory = observation.observation_definition?.category;
 
-    if (hasRadiologyResultsView && observationCategory === "imaging") {
-      radiologyResultsViewObservations.push(observation);
-    } else {
-      tableObservations.push(observation);
+      if (observationCategory && overrideCategories.has(observationCategory)) {
+        overriddenObservations.push(observation);
+      } else {
+        nonOverriddenObservations.push(observation);
+      }
     }
-  }
+    return { overriddenObservations, nonOverriddenObservations };
+  }, [observations, overrideCategories]);
 
-  const hasInterpretation = tableObservations.some(
+  const hasInterpretation = nonOverriddenObservations.some(
     (observation) => observation.interpretation?.display,
   );
-  const hasComponentInterpretation = tableObservations.some(
+  const hasComponentInterpretation = nonOverriddenObservations.some(
     (observation) =>
       observation.component &&
       observation.component.some(
@@ -209,9 +221,8 @@ export function DiagnosticReportResultsTable({
     const highlight = observation.interpretation?.highlight ?? false;
 
     return (
-      <>
+      <Fragment key={observation.id}>
         <TableRow
-          key={observation.id}
           className={cn(
             "divide-x divide-gray-300 text-sm text-gray-950",
             hasComponents && "border-b-0",
@@ -267,7 +278,7 @@ export function DiagnosticReportResultsTable({
             observation.component,
             observation.observation_definition,
           )}
-      </>
+      </Fragment>
     );
   };
 
@@ -277,13 +288,11 @@ export function DiagnosticReportResultsTable({
 
   return (
     <div className="space-y-4">
-      {radiologyResultsViewObservations.length > 0 && (
-        <PLUGIN_Component
-          __name="RadiologyDiagnosticReportResultsView"
-          observations={radiologyResultsViewObservations}
-        />
-      )}
-      {tableObservations.length > 0 && (
+      <PLUGIN_Component
+        __name="DiagnosticReportResultsOverride"
+        observations={overriddenObservations}
+      />
+      {nonOverriddenObservations.length > 0 && (
         <div className="rounded-md border overflow-hidden">
           <Table className="border-collapse bg-white shadow-sm cursor-default table-fixed w-full">
             <TableHeader className="bg-gray-100">
@@ -305,7 +314,7 @@ export function DiagnosticReportResultsTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tableObservations.map((observation) =>
+              {nonOverriddenObservations.map((observation) =>
                 renderObservation(observation),
               )}
             </TableBody>
