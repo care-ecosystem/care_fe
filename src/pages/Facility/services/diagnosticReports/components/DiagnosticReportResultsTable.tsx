@@ -36,21 +36,37 @@ export function DiagnosticReportResultsTable({
 }: DiagnosticReportResultsTableProps) {
   const careApps = useCareApps();
 
-  const overrideCategories = useMemo(
-    () =>
-      new Set(
-        careApps.flatMap((app) => {
-          const category =
-            app.meta.config?.diagnosticReportResultsOverrideCategory;
-          return category ? [category] : [];
-        }),
-      ),
-    [careApps],
-  );
-
   const { overriddenObservations, nonOverriddenObservations } = useMemo(() => {
+    const isOverridePresent = careApps.some(
+      (plugin) =>
+        !plugin.isLoading && plugin.components?.DiagnosticReportResultsOverride,
+    );
+
+    if (!isOverridePresent) {
+      return {
+        overriddenObservations: [],
+        nonOverriddenObservations: observations,
+      };
+    }
+
+    const overrideCategories = new Set(
+      careApps.flatMap((app) => {
+        const category =
+          app.meta.config?.diagnosticReportResultsOverrideCategory;
+        return category ? [category] : [];
+      }),
+    );
+
+    if (overrideCategories.size == 0) {
+      return {
+        overriddenObservations: [],
+        nonOverriddenObservations: observations,
+      };
+    }
+
     const overriddenObservations: ObservationRead[] = [];
     const nonOverriddenObservations: ObservationRead[] = [];
+
     for (const observation of observations) {
       const observationCategory = observation.observation_definition?.category;
 
@@ -61,7 +77,7 @@ export function DiagnosticReportResultsTable({
       }
     }
     return { overriddenObservations, nonOverriddenObservations };
-  }, [observations, overrideCategories]);
+  }, [observations, careApps]);
 
   const hasInterpretation = nonOverriddenObservations.some(
     (observation) => observation.interpretation?.display,
