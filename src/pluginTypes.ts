@@ -69,7 +69,6 @@ export type PatientDetailsTabDemographyGeneralInfoComponentType = React.FC<{
 export type InvoiceRecordPaymentOptionsComponentType = React.FC<{
   facilityId: string;
   invoice: InvoiceRead;
-  form: UseFormReturn<any>;
 }>;
 
 export type PatientSearchActionsComponentType = React.FC<{
