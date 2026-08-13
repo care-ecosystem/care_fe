@@ -4,6 +4,7 @@ import CareIcon from "@/CAREUI/icons/CareIcon";
 
 import { NavMain } from "@/components/ui/sidebar/nav-main";
 
+import { PLUGIN_Component } from "@/PluginEngine";
 import useCurrentLocation from "@/pages/Facility/locations/utils/useCurrentLocation";
 import useCurrentFacility from "@/pages/Facility/utils/useCurrentFacility";
 import { CalendarIcon, Logs } from "lucide-react";
@@ -80,6 +81,17 @@ export function LocationNav() {
             {
               name: t("purchase_deliveries"),
               url: `${baseUrl}/inventory/external/deliveries/incoming`,
+            },
+            {
+              name: "external_supply_plugin_nav_items",
+              url: "",
+              component: (
+                <PLUGIN_Component
+                  __name="ExternalSupplyNavItems"
+                  facilityId={facilityId}
+                  locationId={locationId}
+                />
+              ),
             },
           ],
         },

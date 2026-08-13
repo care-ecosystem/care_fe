@@ -128,6 +128,11 @@ export type DeliveryOrderActionsComponentType = React.FC<{
   locationId: string;
 }>;
 
+export type ExternalSupplyNavItemsComponentType = React.FC<{
+  facilityId: string;
+  locationId: string;
+}>;
+
 export type DiagnosticReportResultsOverrideComponentType = React.FC<{
   observations: ObservationRead[];
 }>;
@@ -153,6 +158,7 @@ export type SupportedPluginComponents = {
   PatientHomeQuickActions: PatientHomeActionsComponentType;
   DeliveryOrderActions: DeliveryOrderActionsComponentType;
   DiagnosticReportResultsOverride: DiagnosticReportResultsOverrideComponentType;
+  ExternalSupplyNavItems: ExternalSupplyNavItemsComponentType;
 };
 
 // Create a type for lazy-loaded components

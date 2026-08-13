@@ -52,6 +52,7 @@ export interface NavigationLink {
   icon?: ReactNode;
   visibility?: boolean;
   children?: NavigationLink[];
+  component?: ReactNode;
 }
 
 function NavLink({
@@ -223,27 +224,29 @@ function CollapsibleNavItem({
                     </div>
                   )}
                   <SidebarMenuSubItem>
-                    <SidebarMenuSubButton
-                      asChild
-                      className={
-                        "text-gray-600 transition font-normal hover:bg-gray-200 hover:text-green-700"
-                      }
-                    >
-                      <NavLink
-                        href={subItem.url}
-                        isSelected={isSubItemSelected(subItem.url)}
-                        className="w-full"
-                        activeClass={cn(
-                          subItem.url
-                            .split("/")
-                            .every((part) => fullPathMap[part]) &&
-                            "bg-white text-green-700 shadow",
-                        )}
-                        exactActiveClass="bg-white text-green-700 shadow"
+                    {subItem.component ?? (
+                      <SidebarMenuSubButton
+                        asChild
+                        className={
+                          "text-gray-600 transition font-normal hover:bg-gray-200 hover:text-green-700"
+                        }
                       >
-                        {subItem.name}
-                      </NavLink>
-                    </SidebarMenuSubButton>
+                        <NavLink
+                          href={subItem.url}
+                          isSelected={isSubItemSelected(subItem.url)}
+                          className="w-full"
+                          activeClass={cn(
+                            subItem.url
+                              .split("/")
+                              .every((part) => fullPathMap[part]) &&
+                              "bg-white text-green-700 shadow",
+                          )}
+                          exactActiveClass="bg-white text-green-700 shadow"
+                        >
+                          {subItem.name}
+                        </NavLink>
+                      </SidebarMenuSubButton>
+                    )}
                   </SidebarMenuSubItem>
                 </Fragment>
               ))}
