@@ -204,9 +204,7 @@ export function DiagnosticReportResultsTable({
                 highlight ? "font-bold" : "font-normal",
               )}
             >
-              <span className="whitespace-pre-line">
-                {component.value.value}
-              </span>
+              <span>{component.value.value}</span>
               {component.value.unit && (
                 <span className="text-gray-500 ml-1">
                   {component.value.unit.code || component.value.unit.display}
@@ -256,9 +254,7 @@ export function DiagnosticReportResultsTable({
                   highlight ? "font-bold" : "font-normal",
                 )}
               >
-                <span className="whitespace-pre-line">
-                  {observation.value.value}
-                </span>
+                <span>{observation.value.value}</span>
                 {observation.value.unit && (
                   <span className="text-gray-500 ml-1">
                     {observation.value.unit.code ||

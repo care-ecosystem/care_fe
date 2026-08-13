@@ -10,7 +10,6 @@ export enum QuestionType {
   dateTime = "dateTime",
   time = "time",
   string = "string",
-  text = "text",
   quantity = "quantity",
 }
 
