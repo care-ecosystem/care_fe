@@ -34,7 +34,6 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
 
 import { Avatar } from "@/components/Common/Avatar";
 import { FileListTable } from "@/components/Files/FileListTable";
@@ -777,43 +776,26 @@ export function DiagnosticReportForm({
                   <Label className="text-sm font-medium mb-1 block text-gray-700">
                     {t("result")}
                   </Label>
-                  {component.permitted_data_type === "text" ? (
-                    <Textarea
-                      value={componentData.value}
-                      onChange={(e) =>
-                        handleComponentValueChange(
-                          definition.id,
-                          index,
-                          component.code.code,
-                          e.target.value,
-                          componentData.unit,
-                        )
-                      }
-                      placeholder={t("component_value")}
-                      disabled={isErrored || disableEdit}
-                    />
-                  ) : (
-                    <Input
-                      value={componentData.value}
-                      onChange={(e) =>
-                        handleComponentValueChange(
-                          definition.id,
-                          index,
-                          component.code.code,
-                          e.target.value,
-                          componentData.unit,
-                        )
-                      }
-                      placeholder={t("component_value")}
-                      type={
-                        component.permitted_data_type === "decimal" ||
-                        component.permitted_data_type === "integer"
-                          ? "number"
-                          : "text"
-                      }
-                      disabled={isErrored || disableEdit}
-                    />
-                  )}
+                  <Input
+                    value={componentData.value}
+                    onChange={(e) =>
+                      handleComponentValueChange(
+                        definition.id,
+                        index,
+                        component.code.code,
+                        e.target.value,
+                        componentData.unit,
+                      )
+                    }
+                    placeholder={t("component_value")}
+                    type={
+                      component.permitted_data_type === "decimal" ||
+                      component.permitted_data_type === "integer"
+                        ? "number"
+                        : "text"
+                    }
+                    disabled={isErrored || disableEdit}
+                  />
                 </div>
               </div>
             </div>
@@ -1042,44 +1024,27 @@ export function DiagnosticReportForm({
                                         <Label className="text-sm font-medium mb-1 block text-gray-700">
                                           {t("result")}
                                         </Label>
-                                        {definition.permitted_data_type ===
-                                        "text" ? (
-                                          <Textarea
-                                            value={observationData.value}
-                                            onChange={(e) =>
-                                              handleValueChange(
-                                                definition.id,
-                                                index,
-                                                e.target.value,
-                                                observationData.unit,
-                                              )
-                                            }
-                                            placeholder={t("result_value")}
-                                            disabled={isErrored || disableEdit}
-                                          />
-                                        ) : (
-                                          <Input
-                                            value={observationData.value}
-                                            onChange={(e) =>
-                                              handleValueChange(
-                                                definition.id,
-                                                index,
-                                                e.target.value,
-                                                observationData.unit,
-                                              )
-                                            }
-                                            placeholder={t("result_value")}
-                                            type={
-                                              definition.permitted_data_type ===
-                                                "decimal" ||
-                                              definition.permitted_data_type ===
-                                                "integer"
-                                                ? "number"
-                                                : "text"
-                                            }
-                                            disabled={isErrored || disableEdit}
-                                          />
-                                        )}
+                                        <Input
+                                          value={observationData.value}
+                                          onChange={(e) =>
+                                            handleValueChange(
+                                              definition.id,
+                                              index,
+                                              e.target.value,
+                                              observationData.unit,
+                                            )
+                                          }
+                                          placeholder={t("result_value")}
+                                          type={
+                                            definition.permitted_data_type ===
+                                              "decimal" ||
+                                            definition.permitted_data_type ===
+                                              "integer"
+                                              ? "number"
+                                              : "text"
+                                          }
+                                          disabled={isErrored || disableEdit}
+                                        />
                                       </div>
                                     </div>
                                   )}
