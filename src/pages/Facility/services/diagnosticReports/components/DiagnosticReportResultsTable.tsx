@@ -1,4 +1,5 @@
 import { t } from "i18next";
+import { Fragment, useMemo } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -12,6 +13,8 @@ import {
 } from "@/components/ui/table";
 
 import { Separator } from "@/components/ui/separator";
+import { useCareApps } from "@/hooks/useCareApps";
+import { PLUGIN_Component } from "@/PluginEngine";
 import { ConditionOperationSummary } from "@/types/base/condition/condition";
 import {
   Interpretation,
@@ -31,10 +34,55 @@ interface DiagnosticReportResultsTableProps {
 export function DiagnosticReportResultsTable({
   observations,
 }: DiagnosticReportResultsTableProps) {
-  const hasInterpretation = observations.some(
+  const careApps = useCareApps();
+
+  const { overriddenObservations, nonOverriddenObservations } = useMemo(() => {
+    const isOverridePresent = careApps.some(
+      (plugin) =>
+        !plugin.isLoading && plugin.components?.DiagnosticReportResultsOverride,
+    );
+
+    if (!isOverridePresent) {
+      return {
+        overriddenObservations: [],
+        nonOverriddenObservations: observations,
+      };
+    }
+
+    const overrideCategories = new Set(
+      careApps.flatMap((app) => {
+        const category =
+          app.meta.config?.diagnosticReportResultsOverrideCategory;
+        return category ? [category] : [];
+      }),
+    );
+
+    if (overrideCategories.size == 0) {
+      return {
+        overriddenObservations: [],
+        nonOverriddenObservations: observations,
+      };
+    }
+
+    const overriddenObservations: ObservationRead[] = [];
+    const nonOverriddenObservations: ObservationRead[] = [];
+
+    for (const observation of observations) {
+      const observationCategory = observation.observation_definition?.category;
+
+      if (observationCategory && overrideCategories.has(observationCategory)) {
+        overriddenObservations.push(observation);
+      } else {
+        nonOverriddenObservations.push(observation);
+      }
+    }
+    return { overriddenObservations, nonOverriddenObservations };
+  }, [observations, careApps]);
+
+  const hasInterpretation = nonOverriddenObservations.some(
     (observation) => observation.interpretation?.display,
   );
-  const hasComponentInterpretation = observations.some(
+  const hasComponentInterpretation = nonOverriddenObservations.some(
     (observation) =>
       observation.component &&
       observation.component.some(
@@ -156,7 +204,9 @@ export function DiagnosticReportResultsTable({
                 highlight ? "font-bold" : "font-normal",
               )}
             >
-              <span>{component.value.value}</span>
+              <span className="whitespace-pre-line">
+                {component.value.value}
+              </span>
               {component.value.unit && (
                 <span className="text-gray-500 ml-1">
                   {component.value.unit.code || component.value.unit.display}
@@ -187,9 +237,8 @@ export function DiagnosticReportResultsTable({
     const highlight = observation.interpretation?.highlight ?? false;
 
     return (
-      <>
+      <Fragment key={observation.id}>
         <TableRow
-          key={observation.id}
           className={cn(
             "divide-x divide-gray-300 text-sm text-gray-950",
             hasComponents && "border-b-0",
@@ -207,7 +256,9 @@ export function DiagnosticReportResultsTable({
                   highlight ? "font-bold" : "font-normal",
                 )}
               >
-                <span>{observation.value.value}</span>
+                <span className="whitespace-pre-line">
+                  {observation.value.value}
+                </span>
                 {observation.value.unit && (
                   <span className="text-gray-500 ml-1">
                     {observation.value.unit.code ||
@@ -243,7 +294,7 @@ export function DiagnosticReportResultsTable({
             observation.component,
             observation.observation_definition,
           )}
-      </>
+      </Fragment>
     );
   };
 
@@ -252,30 +303,40 @@ export function DiagnosticReportResultsTable({
   }
 
   return (
-    <div className="rounded-md border overflow-hidden">
-      <Table className="border-collapse bg-white shadow-sm cursor-default table-fixed w-full">
-        <TableHeader className="bg-gray-100">
-          <TableRow className="divide-x-1 divide-gray-300">
-            <TableHead className="font-medium text-sm text-gray-700 w-[25%] align-top pt-2">
-              {t("test")}
-            </TableHead>
-            <TableHead className="font-medium text-sm text-gray-700 w-[25%] align-top pt-2">
-              {t("result")}
-            </TableHead>
-            <TableHead className="font-medium text-sm text-gray-700 w-[25%] whitespace-normal wrap-break-word align-top pt-2">
-              {t("reference_range")}
-            </TableHead>
-            {showInterpretation && (
-              <TableHead className="font-medium text-sm text-gray-700 w-[25%] whitespace-normal wrap-break-word align-top pt-2">
-                {t("interpretation")}
-              </TableHead>
-            )}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {observations.map((observation) => renderObservation(observation))}
-        </TableBody>
-      </Table>
+    <div className="space-y-4">
+      <PLUGIN_Component
+        __name="DiagnosticReportResultsOverride"
+        observations={overriddenObservations}
+      />
+      {nonOverriddenObservations.length > 0 && (
+        <div className="rounded-md border overflow-hidden">
+          <Table className="border-collapse bg-white shadow-sm cursor-default table-fixed w-full">
+            <TableHeader className="bg-gray-100">
+              <TableRow className="divide-x-1 divide-gray-300">
+                <TableHead className="font-medium text-sm text-gray-700 w-[25%] align-top pt-2">
+                  {t("test")}
+                </TableHead>
+                <TableHead className="font-medium text-sm text-gray-700 w-[25%] align-top pt-2">
+                  {t("result")}
+                </TableHead>
+                <TableHead className="font-medium text-sm text-gray-700 w-[25%] whitespace-normal wrap-break-word align-top pt-2">
+                  {t("reference_range")}
+                </TableHead>
+                {showInterpretation && (
+                  <TableHead className="font-medium text-sm text-gray-700 w-[25%] whitespace-normal wrap-break-word align-top pt-2">
+                    {t("interpretation")}
+                  </TableHead>
+                )}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {nonOverriddenObservations.map((observation) =>
+                renderObservation(observation),
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 }
