@@ -153,6 +153,9 @@ export type SupportedPluginComponents = {
   PatientHomeQuickActions: PatientHomeActionsComponentType;
   DeliveryOrderActions: DeliveryOrderActionsComponentType;
   DiagnosticReportResultsOverride: DiagnosticReportResultsOverrideComponentType;
+  KioskFeedbackPage: React.FC;
+  KioskComplaintPage: React.FC;
+  CareIssueManagementWidget: React.FC;
 };
 
 // Create a type for lazy-loaded components

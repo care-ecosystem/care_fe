@@ -7,6 +7,7 @@ on:
       - main
       - production
       - dev
+      - new-deployment
     tags:
       - 'v*'
 
@@ -120,8 +121,8 @@ jobs:
           cache-to: type=gha,mode=max
 
           build-args: |
-            REACT_CARE_API_URL=http://staging.carehmis.dpdns.org
-            REACT_PUBLIC_URL=http://staging.carehmis.dpdns.org
+            REACT_CARE_API_URL=https://care-k3s.digit.org
+            REACT_PUBLIC_URL=https://care-k3s.digit.org
 
       - name: Output image details
         run: |

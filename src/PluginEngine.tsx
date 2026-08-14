@@ -157,7 +157,10 @@ export default function PluginEngine({
         }
       >
         <CareAppsContext.Provider value={pluginsQuery}>
-          <Suspense fallback={<Loading />}>{children}</Suspense>
+          <Suspense fallback={<Loading />}>
+            {children}
+            <PLUGIN_Component __name="CareIssueManagementWidget" />
+          </Suspense>
         </CareAppsContext.Provider>
       </ErrorBoundary>
     </Suspense>

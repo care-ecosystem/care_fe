@@ -15,6 +15,7 @@ import useAuthUser from "@/hooks/useAuthUser";
 import { useOrganizationRoutes, usePluginRoutes } from "@/hooks/useCareApps";
 import useSidebarState from "@/hooks/useSidebarState";
 
+import { PLUGIN_Component } from "@/PluginEngine";
 import { routes as publicRoutes } from "@/Routers/PublicRouter";
 import ConsultationRoutes from "@/Routers/routes/ConsultationRoutes";
 import FacilityRoutes from "@/Routers/routes/FacilityRoutes";
@@ -145,6 +146,7 @@ export default function AppRouter() {
           id="pages"
           className="flex flex-col flex-1 max-w-full min-h-[calc(100svh-(--spacing(4)))] md:m-2 md:peer-data-[state=collapsed]:ml-0 border border-gray-200 rounded-lg shadow-sm bg-gray-50 focus:outline-hidden"
         >
+          <PLUGIN_Component __name="CareIssueManagementWidget" />
           <Button onClick={() => setCommandDialogOpen(true)} className="hidden">
             <ShortcutBadge actionId="show-shortcuts" />
           </Button>
