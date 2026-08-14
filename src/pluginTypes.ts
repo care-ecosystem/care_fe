@@ -5,6 +5,7 @@ import { PluginEncounterTabProps } from "@/pages/Encounters/EncounterShow";
 import { InvoiceRead } from "@/types/billing/invoice/invoice";
 import { DeviceDetail } from "@/types/device/device";
 import { EncounterRead } from "@/types/emr/encounter/encounter";
+import { ObservationRead } from "@/types/emr/observation/observation";
 import {
   PatientListRead,
   PatientRead,
@@ -101,7 +102,7 @@ export type DiagnosticReportOverrideComponentType = React.FC<{
     id: string;
     title?: string;
     code?: { code: string; display?: string };
-    component?: { code: { code: string; display?: string } }[];
+    component?: { code: { code: string; display?: string } }[] | null;
     permitted_unit?: { code: string; display?: string; system?: string } | null;
     permitted_data_type?: string;
   }[];
@@ -127,6 +128,10 @@ export type DeliveryOrderActionsComponentType = React.FC<{
   locationId: string;
 }>;
 
+export type DiagnosticReportResultsOverrideComponentType = React.FC<{
+  observations: ObservationRead[];
+}>;
+
 // Define supported plugin components
 export type SupportedPluginComponents = {
   DoctorConnectButtons: DoctorConnectButtonComponentType;
@@ -147,7 +152,7 @@ export type SupportedPluginComponents = {
   DiagnosticReportOverride: DiagnosticReportOverrideComponentType;
   PatientHomeQuickActions: PatientHomeActionsComponentType;
   DeliveryOrderActions: DeliveryOrderActionsComponentType;
-
+  DiagnosticReportResultsOverride: DiagnosticReportResultsOverrideComponentType;
   KioskFeedbackPage: React.FC;
   KioskComplaintPage: React.FC;
   CareIssueManagementWidget: React.FC;

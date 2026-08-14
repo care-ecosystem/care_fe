@@ -17,7 +17,7 @@ import PluginEngine from "@/PluginEngine";
 import PatientUserProvider from "@/Providers/PatientUserProvider";
 import { FacilitiesPage } from "@/pages/Facility/FacilitiesPage";
 import PatientIndex from "@/pages/Patient/index";
-import { PatientRegistration } from "@/pages/PublicAppointments/PatientRegistration";
+import PublicPatientRegistration from "@/pages/PublicAppointments/PatientRegistration";
 import PatientSelect from "@/pages/PublicAppointments/PatientSelect";
 import { ScheduleAppointment } from "@/pages/PublicAppointments/Schedule";
 import { AppointmentSuccess } from "@/pages/PublicAppointments/Success";
@@ -80,7 +80,7 @@ const AppointmentRoutes = {
   }: {
     facilityId: string;
     staffId: string;
-  }) => <PatientRegistration facilityId={facilityId} staffId={staffId} />,
+  }) => <PublicPatientRegistration facilityId={facilityId} staffId={staffId} />,
 };
 
 // This inner component runs INSIDE PluginEngine, so usePluginRoutes() works
