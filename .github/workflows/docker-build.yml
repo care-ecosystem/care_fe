@@ -37,6 +37,9 @@ jobs:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
 
+    outputs:
+      short_sha: ${{ steps.vars.outputs.SHORT_SHA }}
+
     permissions:
       contents: read
       packages: write
@@ -141,3 +144,30 @@ jobs:
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  # ── Job 2: Trigger deployment after successful build ─────────────────────────
+  trigger-deployment:
+    name: Trigger Deployment
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    permissions:
+      contents: write
+
+    steps:
+      - name: Trigger Frontend Deployment
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          event-type: deploy-to-care
+          client-payload: |
+            {
+              "environment": "dev",
+              "image_name": "ghcr.io/care-ecosystem/care_fe:${{ github.ref_name }}-${{ github.run_number }}-${{ needs.build-and-push.outputs.short_sha }}"
+            }
+
+      - name: Deployment trigger summary
+        run: |
+          echo "## 🚀 Deployment Triggered to Dev" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Frontend:** \`ghcr.io/care-ecosystem/care_fe:${{ github.ref_name }}-${{ github.run_number }}-${{ needs.build-and-push.outputs.short_sha }}\`" >> $GITHUB_STEP_SUMMARY
