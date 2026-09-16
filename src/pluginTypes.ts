@@ -5,6 +5,7 @@ import { PluginEncounterTabProps } from "@/pages/Encounters/EncounterShow";
 import { InvoiceRead } from "@/types/billing/invoice/invoice";
 import { DeviceDetail } from "@/types/device/device";
 import { EncounterRead } from "@/types/emr/encounter/encounter";
+import { ObservationRead } from "@/types/emr/observation/observation";
 import {
   PatientListRead,
   PatientRead,
@@ -132,6 +133,10 @@ export type UserProfileSectionsComponentType = React.FC<{
   user: UserRead;
   isOwnProfile: boolean;
   className?: string;
+}
+ 
+export type DiagnosticReportResultsOverrideComponentType = React.FC<{
+  observations: ObservationRead[];
 }>;
 
 // Define supported plugin components
@@ -155,6 +160,7 @@ export type SupportedPluginComponents = {
   PatientHomeQuickActions: PatientHomeActionsComponentType;
   DeliveryOrderActions: DeliveryOrderActionsComponentType;
   UserProfileSections: UserProfileSectionsComponentType;
+  DiagnosticReportResultsOverride: DiagnosticReportResultsOverrideComponentType;
 };
 
 // Create a type for lazy-loaded components
