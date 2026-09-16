@@ -7,6 +7,7 @@ on:
       - main
       - production
       - dev
+      - custom-dev
     tags:
       - 'v*'
 
