@@ -27,13 +27,11 @@ import {
 } from "@/types/emr/observation/observation";
 import { BaseObservationDefinition } from "@/types/emr/observationDefinition/observationDefinition";
 
-import { register } from "@/lib/override/register";
-
 interface DiagnosticReportResultsTableProps {
   observations: ObservationRead[];
 }
 
-function DiagnosticReportResultsTableBase({
+export function DiagnosticReportResultsTable({
   observations,
 }: DiagnosticReportResultsTableProps) {
   const careApps = useCareApps();
@@ -338,8 +336,3 @@ function DiagnosticReportResultsTableBase({
     </div>
   );
 }
-
-export const DiagnosticReportResultsTable = register(
-  "DiagnosticReportResultsTable",
-  DiagnosticReportResultsTableBase,
-);
