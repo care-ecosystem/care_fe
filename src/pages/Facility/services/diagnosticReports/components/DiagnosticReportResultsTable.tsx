@@ -27,11 +27,13 @@ import {
 } from "@/types/emr/observation/observation";
 import { BaseObservationDefinition } from "@/types/emr/observationDefinition/observationDefinition";
 
+import { register } from "@/lib/override/register";
+
 interface DiagnosticReportResultsTableProps {
   observations: ObservationRead[];
 }
 
-export function DiagnosticReportResultsTable({
+function DiagnosticReportResultsTableBase({
   observations,
 }: DiagnosticReportResultsTableProps) {
   const careApps = useCareApps();
@@ -238,7 +240,7 @@ export function DiagnosticReportResultsTable({
       <Fragment key={observation.id}>
         <TableRow
           className={cn(
-            "divide-x divide-gray-300 text-sm text-gray-950",
+            "divide-x divide-gray-300 text-sm text-gray-950 hover:bg-white",
             hasComponents && "border-b-0",
           )}
         >
@@ -299,40 +301,35 @@ export function DiagnosticReportResultsTable({
   }
 
   return (
-    <div className="space-y-4">
-      <PLUGIN_Component
-        __name="DiagnosticReportResultsOverride"
-        observations={overriddenObservations}
-      />
-      {nonOverriddenObservations.length > 0 && (
-        <div className="rounded-md border overflow-hidden">
-          <Table className="border-collapse bg-white shadow-sm cursor-default table-fixed w-full">
-            <TableHeader className="bg-gray-100">
-              <TableRow className="divide-x-1 divide-gray-300">
-                <TableHead className="font-medium text-sm text-gray-700 w-[25%] align-top pt-2">
-                  {t("test")}
-                </TableHead>
-                <TableHead className="font-medium text-sm text-gray-700 w-[25%] align-top pt-2">
-                  {t("result")}
-                </TableHead>
-                <TableHead className="font-medium text-sm text-gray-700 w-[25%] whitespace-normal wrap-break-word align-top pt-2">
-                  {t("reference_range")}
-                </TableHead>
-                {showInterpretation && (
-                  <TableHead className="font-medium text-sm text-gray-700 w-[25%] whitespace-normal wrap-break-word align-top pt-2">
-                    {t("interpretation")}
-                  </TableHead>
-                )}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {nonOverriddenObservations.map((observation) =>
-                renderObservation(observation),
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+    <div className="rounded-md border overflow-hidden">
+      <Table className="border-collapse bg-white shadow-sm cursor-default table-fixed w-full">
+        <TableHeader className="bg-gray-50">
+          <TableRow className="divide-x-1 divide-gray-300">
+            <TableHead className="font-medium text-sm text-gray-700 w-[25%] align-top pt-2">
+              {t("test")}
+            </TableHead>
+            <TableHead className="font-medium text-sm text-gray-700 w-[25%] align-top pt-2">
+              {t("result")}
+            </TableHead>
+            <TableHead className="font-medium text-sm text-gray-700 w-[25%] whitespace-normal wrap-break-word align-top pt-2">
+              {t("reference_range")}
+            </TableHead>
+            {showInterpretation && (
+              <TableHead className="font-medium text-sm text-gray-700 w-[25%] whitespace-normal wrap-break-word align-top pt-2">
+                {t("interpretation")}
+              </TableHead>
+            )}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {observations.map((observation) => renderObservation(observation))}
+        </TableBody>
+      </Table>
     </div>
   );
 }
+
+export const DiagnosticReportResultsTable = register(
+  "DiagnosticReportResultsTable",
+  DiagnosticReportResultsTableBase,
+);
