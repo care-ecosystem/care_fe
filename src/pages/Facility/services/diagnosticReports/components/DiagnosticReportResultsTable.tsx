@@ -1,4 +1,5 @@
 import { t } from "i18next";
+import { Fragment, useMemo } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -12,6 +13,8 @@ import {
 } from "@/components/ui/table";
 
 import { Separator } from "@/components/ui/separator";
+import { useCareApps } from "@/hooks/useCareApps";
+import { PLUGIN_Component } from "@/PluginEngine";
 import { ConditionOperationSummary } from "@/types/base/condition/condition";
 import {
   Interpretation,
@@ -33,10 +36,55 @@ interface DiagnosticReportResultsTableProps {
 function DiagnosticReportResultsTableBase({
   observations,
 }: DiagnosticReportResultsTableProps) {
-  const hasInterpretation = observations.some(
+  const careApps = useCareApps();
+
+  const { overriddenObservations, nonOverriddenObservations } = useMemo(() => {
+    const isOverridePresent = careApps.some(
+      (plugin) =>
+        !plugin.isLoading && plugin.components?.DiagnosticReportResultsOverride,
+    );
+
+    if (!isOverridePresent) {
+      return {
+        overriddenObservations: [],
+        nonOverriddenObservations: observations,
+      };
+    }
+
+    const overrideCategories = new Set(
+      careApps.flatMap((app) => {
+        const category =
+          app.meta.config?.diagnosticReportResultsOverrideCategory;
+        return category ? [category] : [];
+      }),
+    );
+
+    if (overrideCategories.size == 0) {
+      return {
+        overriddenObservations: [],
+        nonOverriddenObservations: observations,
+      };
+    }
+
+    const overriddenObservations: ObservationRead[] = [];
+    const nonOverriddenObservations: ObservationRead[] = [];
+
+    for (const observation of observations) {
+      const observationCategory = observation.observation_definition?.category;
+
+      if (observationCategory && overrideCategories.has(observationCategory)) {
+        overriddenObservations.push(observation);
+      } else {
+        nonOverriddenObservations.push(observation);
+      }
+    }
+    return { overriddenObservations, nonOverriddenObservations };
+  }, [observations, careApps]);
+
+  const hasInterpretation = nonOverriddenObservations.some(
     (observation) => observation.interpretation?.display,
   );
-  const hasComponentInterpretation = observations.some(
+  const hasComponentInterpretation = nonOverriddenObservations.some(
     (observation) =>
       observation.component &&
       observation.component.some(
@@ -189,9 +237,8 @@ function DiagnosticReportResultsTableBase({
     const highlight = observation.interpretation?.highlight ?? false;
 
     return (
-      <>
+      <Fragment key={observation.id}>
         <TableRow
-          key={observation.id}
           className={cn(
             "divide-x divide-gray-300 text-sm text-gray-950 hover:bg-white",
             hasComponents && "border-b-0",
@@ -245,7 +292,7 @@ function DiagnosticReportResultsTableBase({
             observation.component,
             observation.observation_definition,
           )}
-      </>
+      </Fragment>
     );
   };
 
