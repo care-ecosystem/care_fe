@@ -127,6 +127,10 @@ jobs:
   # and a parent issue in core that links them as sub-issues.
   report:
     needs: [config, check]
+    # One report at a time, so overlapping runs do not create duplicate issues.
+    concurrency:
+      group: core-change-impact-report
+      cancel-in-progress: false
     if: always() && needs.check.result == 'failure' && needs.config.outputs.create_issues == 'true'
     runs-on: ubuntu-latest
     permissions:
@@ -142,6 +146,8 @@ jobs:
       - name: Open or update issues
         run: |
           set -euo pipefail
+          # A failed request inside $(...) must fail the job, not look like an empty answer.
+          shopt -s inherit_errexit
 
           # A newer commit on develop is checked by its own run: do not report on this one.
           tip=$(gh api "repos/$CORE/commits/develop" -q .sha)
@@ -240,14 +246,20 @@ jobs:
           CORE: ${{ github.repository }}
           SHA: ${{ github.sha }}
         run: |
+          set -euo pipefail
+          # Each response is captured on its own, so a failed request fails the job.
+
           # Only the run for the newest commit closes issues, so an older run cannot
           # close the issues of a newer failing run.
-          if [ "$(gh api "repos/$CORE/commits/develop" -q .sha)" != "$SHA" ]; then
+          tip=$(gh api "repos/$CORE/commits/develop" -q .sha)
+          if [ "$tip" != "$SHA" ]; then
             echo "::notice::develop moved on, not closing issues"
             exit 0
           fi
-          for repo in $CORE $(node -e 'console.log(JSON.parse(process.env.PLUGINS).join("\n"))'); do
-            for n in $(gh issue list -R "$repo" -l core-change-impact --state open --json number -q '.[].number'); do
+          plugin_repos=$(node -e 'console.log(JSON.parse(process.env.PLUGINS).join("\n"))')
+          for repo in $CORE $plugin_repos; do
+            numbers=$(gh issue list -R "$repo" -l core-change-impact --state open --json number -q '.[].number')
+            for n in $numbers; do
               gh issue close "$n" -R "$repo" -c "Checks passed on $SHA." >/dev/null
             done
           done
