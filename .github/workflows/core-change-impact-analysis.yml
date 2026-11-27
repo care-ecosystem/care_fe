@@ -1,0 +1,287 @@
+name: Core Change Impact Analysis
+
+# Checks whether a merge into `develop` affects the plugins, by running the checks
+# kept in each plugin repository. On success, merges `develop` into `dev` and
+# notifies the plugin repositories.
+#
+# Plugins and flags are set in .github/core-change-impact-config.json:
+#   plugins         repositories to check, one entry per plugin
+#   create_issues   open issues when a check fails, close them when checks pass again
+#   auto_merge_dev  merge `develop` into `dev` when all checks pass (false: no merge, no events)
+#   notify_plugins  send an event to the plugin repositories after `dev` is updated
+# A flag that is missing counts as false.
+# Each plugin repository provides `.github/core-impact-check.sh`. It runs with the core
+# checkout path in CORE_DIR and fails when the core change affects the plugin.
+#
+# The plugin repositories are public, so `check` reads them with the built-in token.
+# Secret: CORE_CHANGE_IMPACT_WRITE_TOKEN (create issues, push `dev`, dispatch events, used by
+# `report` and `promote`). It must be a fine-grained token that can push to `dev`
+# (it needs to bypass branch protection on `dev`, if enabled).
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch: # manual re-run, skips the quiet period
+
+permissions:
+  contents: read
+
+env:
+  QUIET_PERIOD_MINUTES: 30
+
+jobs:
+  wait:
+    # Manual runs are allowed only from `develop`: the checked commit is merged into `dev`.
+    if: github.repository == 'care-ecosystem/care_fe' && github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    # A new merge cancels the waiting run, which restarts the quiet period. Runs that
+    # are already checking or promoting are not cancelled. Manual runs wait separately.
+    concurrency:
+      group: core-change-impact-wait-${{ github.event_name }}
+      cancel-in-progress: true
+    steps:
+      - name: Wait for quiet period
+        if: github.event_name == 'push'
+        run: sleep "$((QUIET_PERIOD_MINUTES * 60))"
+
+  # Runs while `wait` sleeps, so an invalid configuration fails at once.
+  config:
+    if: github.repository == 'care-ecosystem/care_fe' && github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    outputs:
+      plugins: ${{ steps.c.outputs.plugins }}
+      create_issues: ${{ steps.c.outputs.create_issues }}
+      auto_merge_dev: ${{ steps.c.outputs.auto_merge_dev }}
+      notify_plugins: ${{ steps.c.outputs.notify_plugins }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          sparse-checkout: .github/core-change-impact-config.json
+          sparse-checkout-cone-mode: false
+      - id: c
+        run: |
+          node --input-type=module - <<'JS'
+          import fs from "node:fs";
+
+          const config = JSON.parse(fs.readFileSync(".github/core-change-impact-config.json", "utf8"));
+          const plugins = config.plugins ?? [];
+
+          // Plugins must be unique repositories of the organisation. Each is checked on its default branch.
+          const valid =
+            Array.isArray(plugins) &&
+            plugins.every((p) => typeof p === "string" && /^care-ecosystem\/[A-Za-z0-9._-]+$/.test(p)) &&
+            new Set(plugins).size === plugins.length;
+          if (!valid) {
+            console.log("::error::Invalid plugins in the configuration. Expected unique entries like care-ecosystem/<repository>.");
+            process.exit(1);
+          }
+
+          const output = [`plugins=${JSON.stringify(plugins)}`];
+          for (const flag of ["create_issues", "auto_merge_dev", "notify_plugins"]) {
+            output.push(`${flag}=${config[flag] === true}`);
+          }
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, output.join("\n") + "\n");
+          JS
+
+  # One job per plugin. The job name is used by `report` to find the failing plugins.
+  check:
+    name: check ${{ matrix.repo }}
+    needs: [wait, config]
+    if: needs.config.outputs.plugins != '[]' # an empty matrix is an error
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        repo: ${{ fromJSON(needs.config.outputs.plugins) }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          path: core
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: ${{ matrix.repo }}
+          path: plugin
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      # A plugin without the script is not onboarded. That is a workflow problem, not an impact of core.
+      - name: Check that the plugin script exists
+        working-directory: plugin
+        run: |
+          if [ ! -f .github/core-impact-check.sh ]; then
+            echo "::error::${{ matrix.repo }} has no .github/core-impact-check.sh on its default branch."
+            exit 1
+          fi
+
+      - name: Run the plugin script
+        working-directory: plugin
+        env:
+          CORE_DIR: ${{ github.workspace }}/core
+        run: bash .github/core-impact-check.sh
+
+  # Failure: keep `dev` as it is, open an issue in each failing plugin repository
+  # and a parent issue in core that links them as sub-issues.
+  report:
+    needs: [config, check]
+    # One report at a time, so overlapping runs do not create duplicate issues.
+    concurrency:
+      group: core-change-impact-report
+      cancel-in-progress: false
+    if: always() && needs.check.result == 'failure' && needs.config.outputs.create_issues == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+    env:
+      GH_TOKEN: ${{ secrets.CORE_CHANGE_IMPACT_WRITE_TOKEN }}
+      SHA: ${{ github.sha }}
+      CORE: ${{ github.repository }}
+      RUN_ID: ${{ github.run_id }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      ACTIONS_TOKEN: ${{ github.token }}
+    steps:
+      - name: Open or update issues
+        run: |
+          set -euo pipefail
+          # A failed request inside $(...) must fail the job, not look like an empty answer.
+          shopt -s inherit_errexit
+
+          # A newer commit on develop is checked by its own run: do not report on this one.
+          tip=$(gh api "repos/$CORE/commits/develop" -q .sha)
+          if [ "$tip" != "$SHA" ]; then
+            echo "::notice::develop moved on to $tip, not reporting on $SHA"
+            exit 0
+          fi
+
+          # Existing open issue with the label, else create. Prints the issue number.
+          upsert() { # repo title body
+            local n
+            gh label create core-change-impact -R "$1" --force >/dev/null
+            n=$(gh issue list -R "$1" -l core-change-impact --state open --json number -q '.[0].number // empty')
+            if [ -n "$n" ]; then
+              gh issue comment "$n" -R "$1" --body "$3" >/dev/null
+            else
+              n=$(gh issue create -R "$1" -l core-change-impact -t "$2" --body "$3" | grep -o '[0-9]*$')
+            fi
+            echo "$n"
+          }
+
+          # Only plugins whose own check script failed. A check job that failed earlier
+          # (for example at checkout) is a workflow problem, not a plugin impact.
+          jobs=$(GH_TOKEN="$ACTIONS_TOKEN" gh api "repos/$CORE/actions/runs/$RUN_ID/jobs" --paginate --jq '.jobs[]')
+          failed=$(node -e 'const jobs = require("fs").readFileSync(0, "utf8").split("\n").filter(Boolean).map(JSON.parse); console.log(jobs.filter((j) => j.name.startsWith("check ") && j.steps.some((s) => s.name === "Run the plugin script" && s.conclusion === "failure")).map((j) => j.name.slice(6)).join("\n"))' <<<"$jobs")
+          check_failures=$(node -e 'const jobs = require("fs").readFileSync(0, "utf8").split("\n").filter(Boolean).map(JSON.parse); console.log(jobs.filter((j) => j.name.startsWith("check ") && j.conclusion === "failure").length)' <<<"$jobs")
+          if [ -z "$failed" ]; then
+            echo "::error::A check job failed before running the plugin script. See the run."
+            exit 1
+          fi
+
+          parent=$(upsert "$CORE" "Core change affects plugins" \
+            "Core commit: $SHA"$'\n'"Run: $RUN_URL"$'\n'"\`dev\` was not updated.")
+          parent_id=$(gh api "repos/$CORE/issues/$parent" -q .id)
+
+          for repo in $failed; do
+            body="Core commit: $SHA"$'\n'"Failing check: $RUN_URL"$'\n'"Core changes since \`dev\`: https://github.com/$CORE/compare/dev...$SHA"
+            n=$(upsert "$repo" "Core change affects this plugin" "$body")
+            id=$(gh api "repos/$repo/issues/$n" -q .id)
+            # Fails if the issue is already a sub-issue, which is expected on a repeat failure.
+            gh api -X POST "repos/$CORE/issues/$parent/sub_issues" -F sub_issue_id="$id" >/dev/null ||
+              echo "::warning::Could not link $repo#$n as a sub-issue (already linked, or no permission)"
+          done
+
+          # Some check jobs failed for another reason than the plugin script: raise a workflow error too.
+          if [ "$check_failures" -gt "$(grep -c . <<<"$failed")" ]; then
+            echo "::error::Some check jobs failed before running the plugin script. See the run."
+            exit 1
+          fi
+
+  # Success: merge `develop` into `dev`, notify the plugins, close open issues.
+  promote:
+    needs: [config, check]
+    concurrency:
+      group: core-change-impact-promote
+      cancel-in-progress: false
+    # An empty plugin list skips `check`, so nothing is merged without a check.
+    if: always() && needs.config.result == 'success' && needs.check.result == 'success'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.CORE_CHANGE_IMPACT_WRITE_TOKEN }}
+      PLUGINS: ${{ needs.config.outputs.plugins }}
+    steps:
+      - if: needs.config.outputs.auto_merge_dev == 'true'
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: dev
+          fetch-depth: 0
+          token: ${{ secrets.CORE_CHANGE_IMPACT_WRITE_TOKEN }} # a push with this token can trigger other workflows
+
+      - name: Merge develop into dev
+        if: needs.config.outputs.auto_merge_dev == 'true'
+        env:
+          SHA: ${{ github.sha }} # the commit that was checked, not the current tip of develop
+        run: |
+          git config user.name "core-change-impact-analysis[bot]"
+          git config user.email "core-change-impact-analysis@users.noreply.github.com"
+          if ! git merge --no-ff "$SHA" -m "Merge develop into dev (core change impact analysis)"; then
+            git merge --abort
+            echo "::error::Merge conflict while merging $SHA into dev. Resolve it manually, then re-run."
+            exit 1
+          fi
+          git push origin dev
+
+      - name: Notify plugin repositories
+        if: needs.config.outputs.auto_merge_dev == 'true' && needs.config.outputs.notify_plugins == 'true'
+        run: |
+          sha=$(git rev-parse HEAD) # the new `dev` commit, not the checked commit
+          for repo in $(node -e 'console.log(JSON.parse(process.env.PLUGINS).join("\n"))'); do
+            gh api -X POST "repos/$repo/dispatches" -f event_type=core-dev-updated -f "client_payload[sha]=$sha"
+          done
+
+      - name: Close resolved issues
+        if: needs.config.outputs.create_issues == 'true'
+        env:
+          CORE: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          # Each response is captured on its own, so a failed request fails the job.
+
+          # Only the run for the newest commit closes issues, so an older run cannot
+          # close the issues of a newer failing run.
+          tip=$(gh api "repos/$CORE/commits/develop" -q .sha)
+          if [ "$tip" != "$SHA" ]; then
+            echo "::notice::develop moved on, not closing issues"
+            exit 0
+          fi
+          plugin_repos=$(node -e 'console.log(JSON.parse(process.env.PLUGINS).join("\n"))')
+          for repo in $CORE $plugin_repos; do
+            numbers=$(gh issue list -R "$repo" -l core-change-impact --state open --json number -q '.[].number')
+            for n in $numbers; do
+              gh issue close "$n" -R "$repo" -c "Checks passed on $SHA." >/dev/null
+            done
+          done
+
+  # The workflow itself failed (not the plugin checks): report in core.
+  workflow-error:
+    needs: [wait, config, promote, report]
+    # No issues when `create_issues` is off. If the configuration itself failed, the flag is unknown and the issue is opened.
+    if: always() && contains(needs.*.result, 'failure') && needs.config.outputs.create_issues != 'false'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Open issue in core
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NEEDS: ${{ toJSON(needs) }}
+          CORE: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create core-change-impact-error -R "$CORE" --force >/dev/null
+          jobs=$(node -e 'console.log(Object.entries(JSON.parse(process.env.NEEDS)).filter(([, job]) => job.result === "failure").map(([name]) => name).join(", "))')
+          gh issue create -R "$CORE" -l core-change-impact-error \
+            -t "Core change impact analysis workflow failed" \
+            --body "Failed jobs: $jobs"$'\n'"Run: $RUN_URL"

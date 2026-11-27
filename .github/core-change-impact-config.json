@@ -1,0 +1,6 @@
+{
+  "plugins": ["care-ecosystem/care_dvdms_fe"],
+  "create_issues": true,
+  "auto_merge_dev": false,
+  "notify_plugins": false
+}
